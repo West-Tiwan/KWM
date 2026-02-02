@@ -3,6 +3,7 @@ package org.example.win
 import com.sun.jna.platform.win32.User32
 import com.sun.jna.platform.win32.WinDef
 import com.sun.jna.platform.win32.WinUser
+import org.example.layout.Rect
 
 class WindowController (val u32i: User32) {
 
@@ -20,51 +21,15 @@ class WindowController (val u32i: User32) {
         )
     }
 
-    fun snapLeft(hwnd: WinDef.HWND) {
-        val m = getMonitorBounds(hwnd)
+    fun apply(hwnd: WinDef.HWND, rect: Rect) {
+        u32i.ShowWindow(hwnd, WinUser.SW_RESTORE)
         u32i.SetWindowPos(
             hwnd,
             null,
-            m.x,
-            m.y,
-            m.width/2,
-            m.height,
-            WinUser.SWP_NOZORDER or WinUser.SWP_NOACTIVATE or WinUser.SWP_NOSENDCHANGING
-        )
-    }
-    fun snapRight(hwnd: WinDef.HWND) {
-        val m = getMonitorBounds(hwnd)
-        u32i.SetWindowPos(
-            hwnd,
-            null,
-            m.width/2,
-            m.y,
-            m.width/2,
-            m.height,
-            WinUser.SWP_NOZORDER or WinUser.SWP_NOACTIVATE or WinUser.SWP_NOSENDCHANGING
-        )
-    }
-    fun snapTop(hwnd: WinDef.HWND) {
-        val m = getMonitorBounds(hwnd)
-        u32i.SetWindowPos(
-            hwnd,
-            null,
-            m.x,
-            m.y,
-            m.width,
-            m.height/2,
-            WinUser.SWP_NOZORDER or WinUser.SWP_NOACTIVATE or WinUser.SWP_NOSENDCHANGING
-        )
-    }
-    fun snapBottom(hwnd: WinDef.HWND) {
-        val m = getMonitorBounds(hwnd)
-        u32i.SetWindowPos(
-            hwnd,
-            null,
-            m.x,
-            m.height/2,
-            m.width,
-            m.height/2,
+            rect.x,
+            rect.y,
+            rect.w,
+            rect.h,
             WinUser.SWP_NOZORDER or WinUser.SWP_NOACTIVATE or WinUser.SWP_NOSENDCHANGING
         )
     }

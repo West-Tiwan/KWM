@@ -3,6 +3,7 @@ package org.example
 import com.sun.jna.platform.win32.User32
 import com.sun.jna.platform.win32.WinUser.*
 import org.example.hotkey.HotkeyManager
+import org.example.layout.*
 import org.example.win.WindowController
 
 fun main() {
@@ -19,10 +20,10 @@ fun main() {
 
         if (msg.message == WM_HOTKEY) {
             when (msg.wParam.toInt()) {
-                hkMg.HK_SL -> cont.snapLeft(hwnd)
-                hkMg.HK_SR -> cont.snapRight(hwnd)
-                hkMg.HK_ST -> cont.snapTop(hwnd)
-                hkMg.HK_SB -> cont.snapBottom(hwnd)
+                hkMg.HK_SL -> cont.apply(hwnd, LeftHalf.rect(cont.getMonitorBounds(hwnd)))
+                hkMg.HK_SR -> cont.apply(hwnd, RightHalf.rect(cont.getMonitorBounds(hwnd)))
+                hkMg.HK_ST -> cont.apply(hwnd, TopHalf.rect(cont.getMonitorBounds(hwnd)))
+                hkMg.HK_SB -> cont.apply(hwnd, BottomHalf.rect(cont.getMonitorBounds(hwnd)))
             }
         }
     }
