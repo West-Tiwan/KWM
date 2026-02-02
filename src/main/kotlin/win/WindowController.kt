@@ -6,48 +6,66 @@ import com.sun.jna.platform.win32.WinUser
 
 class WindowController (val u32i: User32) {
 
-    fun snapLeft(hwnd: WinDef.HWND,h: Int,w: Int) {
-        u32i.SetWindowPos(
-            hwnd,
-            null,
-            0,
-            0,
-            w/2,
-            h,
-            WinUser.SWP_NOZORDER
+    fun getMonitorBounds(hwnd: WinDef.HWND): MonitorBounds {
+        val monitor = u32i.MonitorFromWindow(hwnd, WinUser.MONITOR_DEFAULTTONEAREST)
+        val info = WinUser.MONITORINFO()
+        info.cbSize = info.size()
+        u32i.GetMonitorInfo(monitor, info)
+        val r = info.rcWork // excludes taskbar
+        return MonitorBounds(
+            x = r.left,
+            y = r.top,
+            width = r.right - r.left,
+            height = r.bottom - r.top
         )
     }
-    fun snapRight(hwnd: WinDef.HWND,h: Int,w: Int) {
+
+    fun snapLeft(hwnd: WinDef.HWND) {
+        val m = getMonitorBounds(hwnd)
         u32i.SetWindowPos(
             hwnd,
             null,
-            w/2,
-            0,
-            w/2,
-            h,
-            WinUser.SWP_NOZORDER
+            m.x,
+            m.y,
+            m.width/2,
+            m.height,
+            WinUser.SWP_NOZORDER or WinUser.SWP_NOACTIVATE or WinUser.SWP_NOSENDCHANGING
         )
     }
-    fun snapTop(hwnd: WinDef.HWND,h: Int,w: Int) {
+    fun snapRight(hwnd: WinDef.HWND) {
+        val m = getMonitorBounds(hwnd)
         u32i.SetWindowPos(
             hwnd,
             null,
-            0,
-            0,
-            w,
-            h/2,
-            WinUser.SWP_NOZORDER
+            m.width/2,
+            m.y,
+            m.width/2,
+            m.height,
+            WinUser.SWP_NOZORDER or WinUser.SWP_NOACTIVATE or WinUser.SWP_NOSENDCHANGING
         )
     }
-    fun snapBottom(hwnd: WinDef.HWND,h: Int,w: Int) {
+    fun snapTop(hwnd: WinDef.HWND) {
+        val m = getMonitorBounds(hwnd)
         u32i.SetWindowPos(
             hwnd,
             null,
-            0,
-            h/2,
-            w,
-            h/2,
-            WinUser.SWP_NOZORDER
+            m.x,
+            m.y,
+            m.width,
+            m.height/2,
+            WinUser.SWP_NOZORDER or WinUser.SWP_NOACTIVATE or WinUser.SWP_NOSENDCHANGING
+        )
+    }
+    fun snapBottom(hwnd: WinDef.HWND) {
+        val m = getMonitorBounds(hwnd)
+        u32i.SetWindowPos(
+            hwnd,
+            null,
+            m.x,
+            m.height/2,
+            m.width,
+            m.height/2,
+            WinUser.SWP_NOZORDER or WinUser.SWP_NOACTIVATE or WinUser.SWP_NOSENDCHANGING
         )
     }
 }
