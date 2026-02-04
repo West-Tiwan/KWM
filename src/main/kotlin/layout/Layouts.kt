@@ -14,3 +14,6 @@ object TopHalf: Layout {
 object BottomHalf: Layout {
     override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.x, monitorBounds.height/2, monitorBounds.width, monitorBounds.height/2)
 }
+object FullScreen: Layout {
+    override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.x, monitorBounds.y, monitorBounds.width, monitorBounds.height)
+}
