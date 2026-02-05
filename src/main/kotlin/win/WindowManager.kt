@@ -20,6 +20,16 @@ class WindowManager {
                 ordered[0].windowHandle,
                 FullScreen.rect(cont.getMonitorBounds(ordered[0].windowHandle))
             )
+            2 -> {
+                cont.apply(
+                    ordered[0].windowHandle,
+                    LeftHalf.rect(cont.getMonitorBounds(ordered[0].windowHandle))
+                )
+                cont.apply(
+                    ordered[1].windowHandle,
+                    RightHalf.rect(cont.getMonitorBounds(ordered[1].windowHandle))
+                )
+            }
             else -> {
                 cont.apply(
                     ordered[0].windowHandle,
@@ -28,6 +38,10 @@ class WindowManager {
                 cont.apply(
                     ordered[1].windowHandle,
                     RightHalf.rect(cont.getMonitorBounds(ordered[1].windowHandle))
+                )
+                cont.apply(
+                    ordered[2].windowHandle,
+                    BottomHalf.rect(cont.getMonitorBounds(ordered[2].windowHandle))
                 )
             }
         }

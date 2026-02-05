@@ -14,6 +14,7 @@ fun main() {
     val EVENT_OBJECT_DESTROY = 0x8001
     val WINEVENT_OUTOFCONTEXT = 0x0000
     val WINEVENT_SKIPOWNPROCESS = 0x0002
+    val OBJID_WINDOW = 0
 
     val hkMg = HotkeyManager(u32i)
     val winMan = WindowManager()
@@ -28,13 +29,15 @@ fun main() {
             dwEventThread: WinDef.DWORD?,
             dwmsEventTime: WinDef.DWORD?
         ) {
-            val eventVal = event?.toInt()
-            if ((eventVal == EVENT_SYSTEM_FOREGROUND) or (eventVal == EVENT_OBJECT_CREATE) or (eventVal == EVENT_OBJECT_DESTROY)) {
-                winMan.retile()
+            if (idObject?.toInt() != OBJID_WINDOW) return
+            when (event?.toInt()) {
+                EVENT_SYSTEM_FOREGROUND,
+                EVENT_OBJECT_CREATE,
+                EVENT_OBJECT_DESTROY -> winMan.retile()
             }
         }
     }
-    val hHook = u32i.SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, null,
+    val hHook = u32i.SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_OBJECT_DESTROY, null,
         proc, 0, 0,
         WINEVENT_OUTOFCONTEXT or WINEVENT_SKIPOWNPROCESS)
     if (hHook == null) {
