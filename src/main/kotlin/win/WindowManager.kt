@@ -1,20 +1,31 @@
 package org.example.win
 
 import com.sun.jna.platform.win32.User32
+import com.sun.jna.platform.win32.WinDef
 import org.example.layout.*
 
 class WindowManager {
     val enum = EnumWindows()
     val u32i = User32.INSTANCE
+    var managed: Set<WinDef.HWND> = emptySet()
+    var lastFocus: WinDef.HWND? = null
     val cont = WindowController(u32i)
 
     fun retile() {
         val list = enum.getWindows()
-
+        val handles = list.map { it.windowHandle }.toSet()
         val focused = u32i.GetForegroundWindow()
+
+        if (handles == managed && focused == lastFocus) {
+            return
+        }
+        managed = handles
+        lastFocus = focused
+
         val ordered = list.sortedByDescending {
             it.windowHandle == focused
         }
+
         when (ordered.size) {
             1 -> cont.apply(
                 ordered[0].windowHandle,
