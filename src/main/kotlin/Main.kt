@@ -36,6 +36,11 @@ fun main() {
             if (idObject?.toInt() != OBJID_WINDOW) return
             if (idChild?.toInt() != 0) return
 
+            when (event?.toInt()) {
+                EVENT_OBJECT_CREATE,
+                EVENT_OBJECT_DESTROY -> winMan.syncWindows()
+            }
+
             // 2. Check Visibility
             // Many invisible utility windows fire creation events.
             if (!u32i.IsWindowVisible(hwnd)) return
@@ -63,9 +68,7 @@ fun main() {
 
             // 6. Process the event
             when (event?.toInt()) {
-                EVENT_SYSTEM_FOREGROUND,
-                EVENT_OBJECT_CREATE,
-                EVENT_OBJECT_DESTROY -> winMan.retile()
+                EVENT_SYSTEM_FOREGROUND -> winMan.onFocus(hwnd)
             }
         }
     }
