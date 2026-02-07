@@ -9,10 +9,10 @@ object RightHalf: Layout {
     override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.width/2, monitorBounds.y, monitorBounds.width/2, monitorBounds.height)
 }
 object TopHalf: Layout {
-    override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.x, monitorBounds.y, monitorBounds.width, monitorBounds.height/2)
+    override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.width/2, monitorBounds.y, monitorBounds.width/2, monitorBounds.height/2)
 }
 object BottomHalf: Layout {
-    override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.x, monitorBounds.height/2, monitorBounds.width, monitorBounds.height/2)
+    override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.width/2, monitorBounds.height/2, monitorBounds.width/2, monitorBounds.height/2)
 }
 object FullScreen: Layout {
     override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.x, monitorBounds.y, monitorBounds.width, monitorBounds.height)
