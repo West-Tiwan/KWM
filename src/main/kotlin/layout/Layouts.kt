@@ -17,3 +17,12 @@ object BottomHalf: Layout {
 object FullScreen: Layout {
     override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.x, monitorBounds.y, monitorBounds.width, monitorBounds.height)
 }
+object RightTopThird: Layout {
+    override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.width/2, monitorBounds.y, monitorBounds.width/2, monitorBounds.height/3)
+}
+object RightMiddleThird: Layout {
+    override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.width/2, monitorBounds.height/3, monitorBounds.width/2, monitorBounds.height/3)
+}
+object RightBottomThird: Layout {
+    override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.width/2, 2*monitorBounds.height/3, monitorBounds.width/2, monitorBounds.height/3)
+}

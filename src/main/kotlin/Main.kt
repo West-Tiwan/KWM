@@ -67,9 +67,9 @@ fun main() {
                 className == "SysShadow") return
 
             // 6. Process the event
-            when (event?.toInt()) {
-                EVENT_SYSTEM_FOREGROUND -> winMan.onFocus(hwnd)
-            }
+//            when (event?.toInt()) {
+//                EVENT_SYSTEM_FOREGROUND -> winMan.onFocus(hwnd)
+//            }
         }
     }
     val hHook = u32i.SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_OBJECT_DESTROY, null,
@@ -85,7 +85,11 @@ fun main() {
 
     while (u32i.GetMessage(msg, null, 0, 0) > 0) {
         if (msg.message == WM_HOTKEY) {
-            winMan.retile()
+            when (msg.wParam.toInt()) {
+                hkMg.HK_P -> winMan.promoteWindow(u32i.GetForegroundWindow())
+                hkMg.HK_D -> winMan.moveDownWindow(u32i.GetForegroundWindow())
+                hkMg.HK_U -> winMan.moveUpWindow(u32i.GetForegroundWindow())
+            }
         }
     }
     u32i.UnhookWinEvent(hHook)
