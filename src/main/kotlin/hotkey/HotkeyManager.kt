@@ -7,8 +7,8 @@ import com.sun.jna.platform.win32.WinUser.MOD_NOREPEAT
 
 class HotkeyManager (val u32i: User32) {
     val HK_P = 1
-    val HK_U = 3
-    val HK_D = 4
+    val HK_U = 2
+    val HK_D = 3
 
     fun bind() {
         u32i.RegisterHotKey(null, HK_P, MOD_ALT or MOD_NOREPEAT, VK_LEFT.code)
