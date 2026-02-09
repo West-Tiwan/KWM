@@ -3,6 +3,7 @@ package org.example.win
 import com.sun.jna.platform.win32.User32
 import com.sun.jna.platform.win32.WinDef
 import org.example.layout.*
+import java.util.Collections.swap
 
 class WindowManager {
     val enum = EnumWindows()
@@ -10,7 +11,6 @@ class WindowManager {
     var managed = mutableListOf<WinDef.HWND>()
     var lastFocus: WinDef.HWND? = null
     val cont = WindowController(u32i)
-    var dirty = false
 
     fun syncWindows() {
         val current = enum.getWindows().map { it.windowHandle }
@@ -18,15 +18,13 @@ class WindowManager {
         current.forEach { 
             if (it !in managed) {
                 managed.add(it)
-                dirty = true
+                retile()
             }
-        }
-        if (dirty) {
-            retile()
         }
     }
 
     fun promoteWindow(hwnd: WinDef.HWND) {
+        if (hwnd !in managed) return
         managed.remove(hwnd)
         managed.add(0, hwnd)
         lastFocus = hwnd
@@ -38,9 +36,7 @@ class WindowManager {
         val curr = managed.indexOf(hwnd)
         if (curr != managed.size - 1) {
             val next = curr + 1
-            val temp = managed[curr]
-            managed[curr] = managed[next]
-            managed[next] = temp
+            swap(managed, curr, next)
             retile()
             println("moved Down")
         }
@@ -48,66 +44,62 @@ class WindowManager {
 
     fun moveUpWindow(hwnd: WinDef.HWND) {
         val curr = managed.indexOf(hwnd)
-        if (curr > 1) {
-            val prev = curr - 1
-            val temp = managed[curr]
-            managed[curr] = managed[prev]
-            managed[prev] = temp
+        val prev = curr - 1
+        if (curr > 0) {
+            swap(managed, curr, prev)
             retile()
             println("moved Up")
         }
     }
 
     fun retile() {
-        dirty = false
         val list = managed.take(4)
         if (list.isEmpty()) return
-
-        when (managed.size) {
+        when (list.size) {
             1 -> cont.apply(
-                managed[0],
-                FullScreen.rect(cont.getMonitorBounds(managed[0]))
+                list[0],
+                FullScreen.rect(cont.getMonitorBounds(list[0]))
             )
             2 -> {
                 cont.apply(
-                    managed[0],
-                    LeftHalf.rect(cont.getMonitorBounds(managed[0]))
+                    list[0],
+                    LeftHalf.rect(cont.getMonitorBounds(list[0]))
                 )
                 cont.apply(
-                    managed[1],
-                    RightHalf.rect(cont.getMonitorBounds(managed[1]))
+                    list[1],
+                    RightHalf.rect(cont.getMonitorBounds(list[1]))
                 )
             }
             3 -> {
                 cont.apply(
-                    managed[0],
-                    LeftHalf.rect(cont.getMonitorBounds(managed[0]))
+                    list[0],
+                    LeftHalf.rect(cont.getMonitorBounds(list[0]))
                 )
                 cont.apply(
-                    managed[1],
-                    TopHalf.rect(cont.getMonitorBounds(managed[1]))
+                    list[1],
+                    TopHalf.rect(cont.getMonitorBounds(list[1]))
                 )
                 cont.apply(
-                    managed[2],
-                    BottomHalf.rect(cont.getMonitorBounds(managed[2]))
+                    list[2],
+                    BottomHalf.rect(cont.getMonitorBounds(list[2]))
                 )
             }
             else -> {
                 cont.apply(
-                    managed[0],
-                    LeftHalf.rect(cont.getMonitorBounds(managed[0]))
+                    list[0],
+                    LeftHalf.rect(cont.getMonitorBounds(list[0]))
                 )
                 cont.apply(
-                    managed[1],
-                    RightTopThird.rect(cont.getMonitorBounds(managed[1]))
+                    list[1],
+                    RightTopThird.rect(cont.getMonitorBounds(list[1]))
                 )
                 cont.apply(
-                    managed[2],
-                    RightMiddleThird.rect(cont.getMonitorBounds(managed[2]))
+                    list[2],
+                    RightMiddleThird.rect(cont.getMonitorBounds(list[2]))
                 )
                 cont.apply(
-                    managed[3],
-                    RightBottomThird.rect(cont.getMonitorBounds(managed[3]))
+                    list[3],
+                    RightBottomThird.rect(cont.getMonitorBounds(list[3]))
                 )
             }
         }
