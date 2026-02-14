@@ -12,6 +12,8 @@
             <option value="$PROJECT_DIR$/bar" />
             <option value="$PROJECT_DIR$/core" />
             <option value="$PROJECT_DIR$/launcher" />
+            <option value="$PROJECT_DIR$/launcher/src" />
+            <option value="$PROJECT_DIR$/launcher/src.main.kotlin.org.example" />
           </set>
         </option>
       </GradleProjectSettings>
