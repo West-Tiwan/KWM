@@ -7,8 +7,15 @@ import com.sun.jna.platform.win32.WinNT.HANDLE
 import com.sun.jna.platform.win32.WinUser.*
 import org.example.hotkey.HotkeyManager
 import org.example.win.WindowManager
+import kotlin.concurrent.thread
 
 class WindowApp {
+    fun startAsync() {
+        thread(start = true) {
+            start()
+        }
+    }
+
 
     fun start() {
         val u32i = User32.INSTANCE
@@ -35,6 +42,9 @@ class WindowApp {
             ) {
                 // 1. Basic null/child checks
                 if (hwnd == null) return
+                val title = CharArray(20)
+                u32i.GetWindowText(hwnd, title, 20)
+                if (title.toString() == "KWM") return
                 if (idObject?.toInt() != OBJID_WINDOW) return
                 if (idChild?.toInt() != 0) return
 
@@ -67,11 +77,6 @@ class WindowApp {
                 if (className == "#32768" ||
                     className == "tooltips_class32" ||
                     className == "SysShadow") return
-
-                // 6. Process the event
-//            when (event?.toInt()) {
-//                EVENT_SYSTEM_FOREGROUND -> winMan.onFocus(hwnd)
-//            }
             }
         }
         val hHook = u32i.SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_OBJECT_DESTROY, null,

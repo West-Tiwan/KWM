@@ -1,5 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.2.21" apply false
+    kotlin("jvm") version "1.9.22" apply false
+    id("org.jetbrains.compose") version "1.5.12" apply false
 }
 
 allprojects {
@@ -7,6 +8,7 @@ allprojects {
     version = "0.1.0"
 
     repositories {
+        google()
         mavenCentral()
     }
 }
