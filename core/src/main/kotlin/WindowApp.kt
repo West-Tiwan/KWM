@@ -11,7 +11,7 @@ import kotlin.concurrent.thread
 
 class WindowApp {
     fun startAsync() {
-        thread(start = true) {
+        thread(start = true, isDaemon = false, name = "wm-thread") {
             start()
         }
     }
