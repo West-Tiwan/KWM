@@ -3,57 +3,75 @@ package org.example.win
 import com.sun.jna.platform.win32.User32
 import com.sun.jna.platform.win32.WinDef
 import org.example.layout.*
-import java.util.Collections.swap
 
 class WindowManager {
     val enum = EnumWindows()
     val u32i = User32.INSTANCE
-    var managed = mutableListOf<WinDef.HWND>()
-    var lastFocus: WinDef.HWND? = null
+    val workspaceManager = WorkspaceManager(5)
     val cont = WindowController(u32i)
 
     fun syncWindows() {
-        val current = enum.getWindows().map { it.windowHandle }
-        managed.removeIf { it !in current }
-        current.forEach { 
-            if (it !in managed) {
-                managed.add(it)
-                retile()
+        val currentSystemWindows = enum.getWindows().map { it.windowHandle }
+        val workspaceWindows = workspaceManager.currentWindows()
+
+        currentSystemWindows.forEach {
+            if (it !in workspaceWindows) {
+                workspaceManager.addWindow(it)
             }
         }
+
+        val toRemove = workspaceWindows.filter { it !in currentSystemWindows }
+
+        toRemove.forEach {
+            workspaceManager.removeWindow(it)
+        }
+
+        retile()
+    }
+
+    fun removeWindow(hwnd: WinDef.HWND) {
+        workspaceManager.removeWindow(hwnd)
+        retile()
+    }
+
+    fun switchWorkspace(index: Int) {
+        val (old, new) = workspaceManager.switchTo(index)
+        old.forEach { u32i.ShowWindow(it, User32.SW_HIDE) }
+        new.forEach { u32i.ShowWindow(it, User32.SW_RESTORE) }
+        retile()
     }
 
     fun promoteWindow(hwnd: WinDef.HWND) {
-        if (hwnd !in managed) return
-        managed.remove(hwnd)
-        managed.add(0, hwnd)
-        lastFocus = hwnd
+        val list = workspaceManager.currentWindows()
+        if (hwnd !in list) return
+        workspaceManager.removeWindow(hwnd)
+        workspaceManager.addWindow(hwnd, 0)
         retile()
         println("Promoted")
     }
 
     fun moveDownWindow(hwnd: WinDef.HWND) {
-        val curr = managed.indexOf(hwnd)
-        if (curr != managed.size - 1) {
+        val curr = workspaceManager.currentWindows().indexOf(hwnd)
+        if (curr == -1) return
+        if (curr != workspaceManager.currentWindows().size - 1) {
             val next = curr + 1
-            swap(managed, curr, next)
+            workspaceManager.swapWindows(curr, next)
             retile()
             println("moved Down")
         }
     }
 
     fun moveUpWindow(hwnd: WinDef.HWND) {
-        val curr = managed.indexOf(hwnd)
+        val curr = workspaceManager.currentWindows().indexOf(hwnd)
+        if (curr <= 0) return
         val prev = curr - 1
-        if (curr > 0) {
-            swap(managed, curr, prev)
-            retile()
-            println("moved Up")
-        }
+        workspaceManager.swapWindows(curr, prev)
+        retile()
+        println("moved Up")
     }
 
     fun retile() {
-        val list = managed.take(4)
+        val list = workspaceManager.currentWindows().take(4)
         if (list.isEmpty()) return
         when (list.size) {
             1 -> cont.apply(

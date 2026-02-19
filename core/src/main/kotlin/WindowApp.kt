@@ -29,6 +29,7 @@ class WindowApp {
 
         val hkMg = HotkeyManager(u32i)
         val winMan = WindowManager()
+        winMan.syncWindows()
 
         val proc = object: WinEventProc {
             override fun callback(
@@ -42,16 +43,12 @@ class WindowApp {
             ) {
                 // 1. Basic null/child checks
                 if (hwnd == null) return
-                val title = CharArray(20)
+                val title = CharArray(200)
                 u32i.GetWindowText(hwnd, title, 20)
-                if (title.toString() == "KWM") return
+                val windowTitle = String(title).trim { it <= '\u0000' }
+                if (windowTitle == "KWM") return
                 if (idObject?.toInt() != OBJID_WINDOW) return
                 if (idChild?.toInt() != 0) return
-
-                when (event?.toInt()) {
-                    EVENT_OBJECT_CREATE,
-                    EVENT_OBJECT_DESTROY -> winMan.syncWindows()
-                }
 
                 // 2. Check Visibility
                 // Many invisible utility windows fire creation events.
@@ -77,11 +74,15 @@ class WindowApp {
                 if (className == "#32768" ||
                     className == "tooltips_class32" ||
                     className == "SysShadow") return
+
+                when (event?.toInt()) {
+                    EVENT_OBJECT_DESTROY -> winMan.removeWindow(hwnd)
+                    EVENT_OBJECT_CREATE -> winMan.syncWindows()
+                    EVENT_SYSTEM_FOREGROUND -> winMan.syncWindows()
+                }
             }
         }
-        val hHook = u32i.SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_OBJECT_DESTROY, null,
-            proc, 0, 0,
-            WINEVENT_OUTOFCONTEXT or WINEVENT_SKIPOWNPROCESS)
+        val hHook = u32i.SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_OBJECT_DESTROY, null, proc, 0, 0, WINEVENT_OUTOFCONTEXT or WINEVENT_SKIPOWNPROCESS)
         if (hHook == null) {
             println("failed to install hook")
         }
@@ -96,6 +97,11 @@ class WindowApp {
                     hkMg.HK_P -> winMan.promoteWindow(u32i.GetForegroundWindow())
                     hkMg.HK_D -> winMan.moveDownWindow(u32i.GetForegroundWindow())
                     hkMg.HK_U -> winMan.moveUpWindow(u32i.GetForegroundWindow())
+                    hkMg.HK_W1 -> winMan.switchWorkspace(0)
+                    hkMg.HK_W2 -> winMan.switchWorkspace(1)
+                    hkMg.HK_W3 -> winMan.switchWorkspace(2)
+                    hkMg.HK_W4 -> winMan.switchWorkspace(3)
+                    hkMg.HK_W5 -> winMan.switchWorkspace(4)
                 }
             }
         }
