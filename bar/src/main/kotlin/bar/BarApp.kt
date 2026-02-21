@@ -33,8 +33,8 @@ fun BarContent() {
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF1A1A1A))
-            .padding(horizontal = 10.dp),
+            .background(Color(0xCC000000))
+            .padding(horizontal = 5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
 
@@ -45,7 +45,7 @@ fun BarContent() {
                     number = i + 1,
                     active = i == currentWs
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(5.dp))
             }
         }
 
@@ -55,19 +55,19 @@ fun BarContent() {
         Text(
             "${stats.date}   ${stats.time}",
             color = Color.White,
-            fontSize = 14.sp
+            fontSize = 12.sp
         )
 
         Spacer(Modifier.weight(1f))
 
         // RIGHT — System Info
         Row {
-            Text("CPU ${stats.cpu}%", color = Color.White)
+            Text("CPU ${stats.cpu}%", color = Color.White, fontSize = 12.sp)
             Spacer(Modifier.width(12.dp))
-            Text("RAM ${stats.ram}%", color = Color.White)
+            Text("RAM ${stats.ram}%", color = Color.White, fontSize = 12.sp)
             Spacer(Modifier.width(12.dp))
             if (stats.battery >= 0)
-                Text("BAT ${stats.battery}%", color = Color.White)
+                Text("BAT ${stats.battery}%", color = Color.White, fontSize = 12.sp)
         }
     }
 }
@@ -76,7 +76,7 @@ fun BarContent() {
 fun WorkspaceIndicator(number: Int, active: Boolean) {
     Box(
         modifier = Modifier
-            .size(24.dp)
+            .size(20.dp)
             .background(
                 if (active) Color(0xFF3A86FF)
                 else Color(0xFF2A2A2A),
@@ -87,7 +87,7 @@ fun WorkspaceIndicator(number: Int, active: Boolean) {
         Text(
             number.toString(),
             color = Color.White,
-            fontSize = 12.sp
+            fontSize = 10.sp
         )
     }
 }
@@ -99,6 +99,8 @@ class BarApp {
         Window(
             onCloseRequest = ::exitApplication,
             undecorated = true,
+            resizable = false,
+            transparent = true,
             alwaysOnTop = true,
             state = rememberWindowState(
                 width = Toolkit.getDefaultToolkit().screenSize.width.dp,
