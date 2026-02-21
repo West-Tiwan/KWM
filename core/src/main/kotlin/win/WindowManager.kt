@@ -7,7 +7,7 @@ import org.example.layout.*
 class WindowManager {
     val enum = EnumWindows()
     val u32i = User32.INSTANCE
-    val workspaceManager = WorkspaceManager(5)
+    val workspaceManager = AppState.workspaceManager
     val cont = WindowController(u32i)
 
     fun syncWindows() {

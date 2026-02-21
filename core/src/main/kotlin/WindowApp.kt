@@ -6,6 +6,7 @@ import com.sun.jna.platform.win32.WinDef.DWORD
 import com.sun.jna.platform.win32.WinNT.HANDLE
 import com.sun.jna.platform.win32.WinUser.*
 import org.example.hotkey.HotkeyManager
+import org.example.win.AppState
 import org.example.win.WindowManager
 import kotlin.concurrent.thread
 
@@ -18,6 +19,8 @@ class WindowApp {
 
 
     fun start() {
+        AppState.systemStats.start()
+
         val u32i = User32.INSTANCE
         val EVENT_SYSTEM_FOREGROUND = 0x0003
         val EVENT_OBJECT_CREATE = 0x8000
