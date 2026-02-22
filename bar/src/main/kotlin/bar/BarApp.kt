@@ -1,6 +1,11 @@
 package bar
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
@@ -74,12 +80,31 @@ fun BarContent() {
 
 @Composable
 fun WorkspaceIndicator(number: Int, active: Boolean) {
+    val backgroundColor by animateColorAsState(
+        targetValue =
+            if (active) Color(0xFF3A86FF)
+            else Color(0xFF2A2A2A),
+        animationSpec = tween(
+            durationMillis = 250,
+            easing = FastOutSlowInEasing
+        )
+    )
+    val scale by animateFloatAsState(
+        targetValue = if (active) 1.1f else 1f,
+        animationSpec = tween(250)
+    )
     Box(
         modifier = Modifier
+            .clickable {
+                AppState.windowManager.switchWorkspace(number - 1)
+            }
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .size(20.dp)
             .background(
-                if (active) Color(0xFF3A86FF)
-                else Color(0xFF2A2A2A),
+                backgroundColor,
                 shape = RoundedCornerShape(4.dp)
             ),
         contentAlignment = Alignment.Center

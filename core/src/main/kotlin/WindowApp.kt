@@ -32,6 +32,7 @@ class WindowApp {
 
         val hkMg = HotkeyManager(u32i)
         val winMan = WindowManager()
+        AppState.windowManager = winMan
         winMan.syncWindows()
 
         val proc = object: WinEventProc {
