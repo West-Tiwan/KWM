@@ -106,6 +106,11 @@ class WindowApp {
                     hkMg.HK_W3 -> winMan.switchWorkspace(2)
                     hkMg.HK_W4 -> winMan.switchWorkspace(3)
                     hkMg.HK_W5 -> winMan.switchWorkspace(4)
+                    hkMg.HK_MW1 -> winMan.moveWinToWs(0, u32i.GetForegroundWindow())
+                    hkMg.HK_MW2 -> winMan.moveWinToWs(1, u32i.GetForegroundWindow())
+                    hkMg.HK_MW3 -> winMan.moveWinToWs(2, u32i.GetForegroundWindow())
+                    hkMg.HK_MW4 -> winMan.moveWinToWs(3, u32i.GetForegroundWindow())
+                    hkMg.HK_MW5 -> winMan.moveWinToWs(4, u32i.GetForegroundWindow())
                 }
             }
         }
