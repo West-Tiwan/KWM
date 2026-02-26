@@ -34,6 +34,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import org.example.win.AppState
 import java.awt.Toolkit
+import kotlin.concurrent.thread
 
 @Composable
 fun BarContent() {
@@ -162,25 +163,35 @@ fun ActiveWorkspaceSlider(activeIndex: Int) {
 }
 
 class BarApp {
-    fun start() = application {
-        println("Compose application started")
+    private var exit: (() -> Unit)? = null
+    fun startAsync() {
+        thread(name = "bar-thread") {
+            application {
+                println("Compose application started")
 
-        Window(
-            onCloseRequest = ::exitApplication,
-            undecorated = true,
-            resizable = false,
-            transparent = true,
-            alwaysOnTop = true,
-            state = rememberWindowState(
-                width = Toolkit.getDefaultToolkit().screenSize.width.dp,
-                height = 28.dp,
-                position = WindowPosition.Absolute(
-                    x = 0.dp,
-                    y = 0.dp
-                )
-            )
-        ) {
-            BarContent()
+                Window(
+                    onCloseRequest = ::exitApplication,
+                    undecorated = true,
+                    resizable = false,
+                    transparent = true,
+                    alwaysOnTop = true,
+                    state = rememberWindowState(
+                        width = Toolkit.getDefaultToolkit().screenSize.width.dp,
+                        height = 28.dp,
+                        position = WindowPosition.Absolute(
+                            x = 0.dp,
+                            y = 0.dp
+                        )
+                    )
+                ) {
+                    BarContent()
+                }
+
+                exit = ::exitApplication
+            }
         }
+    }
+    fun shutdown() {
+        exit?.invoke()
     }
 }

@@ -11,86 +11,99 @@ import org.example.win.WindowManager
 import kotlin.concurrent.thread
 
 class WindowApp {
+    val EVENT_SYSTEM_FOREGROUND = 0x0003
+    val EVENT_OBJECT_CREATE = 0x8000
+    val EVENT_OBJECT_DESTROY = 0x8001
+    val WINEVENT_OUTOFCONTEXT = 0x0000
+    val WINEVENT_SKIPOWNPROCESS = 0x0002
+    val OBJID_WINDOW = 0
+    val WS_EX_TOOLWINDOW = 0x00000080L
+    val u32i = User32.INSTANCE
+    val hkMg = HotkeyManager(u32i)
+    val winMan = WindowManager()
+
+
+    val proc = object: WinEventProc {
+        override fun callback(
+            hWinEventHook: HANDLE?,
+            event: WinDef.DWORD?,
+            hwnd: WinDef.HWND?,
+            idObject: WinDef.LONG?,
+            idChild: WinDef.LONG?,
+            dwEventThread: WinDef.DWORD?,
+            dwmsEventTime: WinDef.DWORD?
+        ) {
+            // 1. Basic null/child checks
+            if (hwnd == null) return
+            val title = CharArray(200)
+            u32i.GetWindowText(hwnd, title, 20)
+            val windowTitle = String(title).trim { it <= '\u0000' }
+            if (windowTitle == "KWM") return
+            if (idObject?.toInt() != OBJID_WINDOW) return
+            if (idChild?.toInt() != 0) return
+
+            // 2. Check Visibility
+            // Many invisible utility windows fire creation events.
+            if (!u32i.IsWindowVisible(hwnd)) return
+
+            // 3. Check for Owner
+            // If it has an owner, it's likely a dialog or modal, not a standalone window to tile.
+            if (u32i.GetWindow(hwnd, DWORD(GW_OWNER.toLong())) != null) return
+
+            // 4. Check Extended Styles (Tool Windows)
+            // This catches floating toolbars and some custom tooltips.
+            val exStyle = u32i.GetWindowLong(hwnd, GWL_EXSTYLE)
+            if ((exStyle.toLong() and WS_EX_TOOLWINDOW) == WS_EX_TOOLWINDOW) return
+
+            // 5. Check Class Names (Crucial for Menus)
+            val classNameBuffer = CharArray(256)
+            u32i.GetClassName(hwnd, classNameBuffer, 256)
+            val className = String(classNameBuffer).trim { it <= ' ' } // Clean null terminators
+
+            // #32768 = Standard Menus (Right click, etc)
+            // tooltips_class32 = Tooltips
+            // SysShadow = Dropdown shadows
+            if (className == "#32768" ||
+                className == "tooltips_class32" ||
+                className == "SysShadow") return
+
+            when (event?.toInt()) {
+                EVENT_OBJECT_DESTROY -> winMan.removeWindow(hwnd)
+                EVENT_OBJECT_CREATE -> winMan.syncWindows()
+                EVENT_SYSTEM_FOREGROUND -> winMan.syncWindows()
+            }
+        }
+    }
+    val hHook = u32i.SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_OBJECT_DESTROY, null, proc, 0, 0, WINEVENT_OUTOFCONTEXT or WINEVENT_SKIPOWNPROCESS)
+
+    private var onShutdown: (() -> Unit)? = null
+
+    fun setOnShutdown(callback: () -> Unit) {
+        onShutdown = callback
+    }
+
     fun startAsync() {
         thread(start = true, isDaemon = false, name = "wm-thread") {
             start()
         }
     }
 
+    fun shutdown() {
+        println("Shutting down WM")
+
+        hkMg.unbind()
+        u32i.UnhookWinEvent(hHook)
+
+        onShutdown?.invoke()
+
+        u32i.PostQuitMessage(0)
+    }
+
 
     fun start() {
         AppState.systemStats.start()
-
-        val u32i = User32.INSTANCE
-        val EVENT_SYSTEM_FOREGROUND = 0x0003
-        val EVENT_OBJECT_CREATE = 0x8000
-        val EVENT_OBJECT_DESTROY = 0x8001
-        val WINEVENT_OUTOFCONTEXT = 0x0000
-        val WINEVENT_SKIPOWNPROCESS = 0x0002
-        val OBJID_WINDOW = 0
-        val WS_EX_TOOLWINDOW = 0x00000080L
-
-        val hkMg = HotkeyManager(u32i)
-        val winMan = WindowManager()
         AppState.windowManager = winMan
         winMan.syncWindows()
-
-        val proc = object: WinEventProc {
-            override fun callback(
-                hWinEventHook: HANDLE?,
-                event: WinDef.DWORD?,
-                hwnd: WinDef.HWND?,
-                idObject: WinDef.LONG?,
-                idChild: WinDef.LONG?,
-                dwEventThread: WinDef.DWORD?,
-                dwmsEventTime: WinDef.DWORD?
-            ) {
-                // 1. Basic null/child checks
-                if (hwnd == null) return
-                val title = CharArray(200)
-                u32i.GetWindowText(hwnd, title, 20)
-                val windowTitle = String(title).trim { it <= '\u0000' }
-                if (windowTitle == "KWM") return
-                if (idObject?.toInt() != OBJID_WINDOW) return
-                if (idChild?.toInt() != 0) return
-
-                // 2. Check Visibility
-                // Many invisible utility windows fire creation events.
-                if (!u32i.IsWindowVisible(hwnd)) return
-
-                // 3. Check for Owner
-                // If it has an owner, it's likely a dialog or modal, not a standalone window to tile.
-                if (u32i.GetWindow(hwnd, DWORD(GW_OWNER.toLong())) != null) return
-
-                // 4. Check Extended Styles (Tool Windows)
-                // This catches floating toolbars and some custom tooltips.
-                val exStyle = u32i.GetWindowLong(hwnd, GWL_EXSTYLE)
-                if ((exStyle.toLong() and WS_EX_TOOLWINDOW) == WS_EX_TOOLWINDOW) return
-
-                // 5. Check Class Names (Crucial for Menus)
-                val classNameBuffer = CharArray(256)
-                u32i.GetClassName(hwnd, classNameBuffer, 256)
-                val className = String(classNameBuffer).trim { it <= ' ' } // Clean null terminators
-
-                // #32768 = Standard Menus (Right click, etc)
-                // tooltips_class32 = Tooltips
-                // SysShadow = Dropdown shadows
-                if (className == "#32768" ||
-                    className == "tooltips_class32" ||
-                    className == "SysShadow") return
-
-                when (event?.toInt()) {
-                    EVENT_OBJECT_DESTROY -> winMan.removeWindow(hwnd)
-                    EVENT_OBJECT_CREATE -> winMan.syncWindows()
-                    EVENT_SYSTEM_FOREGROUND -> winMan.syncWindows()
-                }
-            }
-        }
-        val hHook = u32i.SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_OBJECT_DESTROY, null, proc, 0, 0, WINEVENT_OUTOFCONTEXT or WINEVENT_SKIPOWNPROCESS)
-        if (hHook == null) {
-            println("failed to install hook")
-        }
-        println("hook listening")
 
         hkMg.bind()
         val msg = MSG()
@@ -111,9 +124,11 @@ class WindowApp {
                     hkMg.HK_MW3 -> winMan.moveWinToWs(2, u32i.GetForegroundWindow())
                     hkMg.HK_MW4 -> winMan.moveWinToWs(3, u32i.GetForegroundWindow())
                     hkMg.HK_MW5 -> winMan.moveWinToWs(4, u32i.GetForegroundWindow())
+                    hkMg.HK_QUIT -> {
+                        shutdown()
+                    }
                 }
             }
         }
-        u32i.UnhookWinEvent(hHook)
     }
 }

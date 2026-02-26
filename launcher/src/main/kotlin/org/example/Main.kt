@@ -7,5 +7,9 @@ fun main() {
     val bar = BarApp()
 
     wm.startAsync()
-    bar.start()
+    bar.startAsync()
+
+    wm.setOnShutdown {
+        bar.shutdown()
+    }
 }

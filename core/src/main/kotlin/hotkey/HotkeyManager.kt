@@ -20,6 +20,7 @@ class HotkeyManager (val u32i: User32) {
     val HK_MW3 = 23
     val HK_MW4 = 24
     val HK_MW5 = 25
+    val HK_QUIT = 99
 
     fun bind() {
         u32i.RegisterHotKey(null, HK_P, MOD_ALT or MOD_NOREPEAT, VK_LEFT.code)
@@ -35,6 +36,7 @@ class HotkeyManager (val u32i: User32) {
         u32i.RegisterHotKey(null, HK_MW3, MOD_ALT or MOD_SHIFT or MOD_NOREPEAT, VK_3.code)
         u32i.RegisterHotKey(null, HK_MW4, MOD_ALT or MOD_SHIFT or MOD_NOREPEAT, VK_4.code)
         u32i.RegisterHotKey(null, HK_MW5, MOD_ALT or MOD_SHIFT or MOD_NOREPEAT, VK_5.code)
+        u32i.RegisterHotKey(null, HK_QUIT, MOD_ALT or MOD_SHIFT or MOD_NOREPEAT, VK_Q.code)
     }
 
     fun unbind() {
@@ -51,5 +53,6 @@ class HotkeyManager (val u32i: User32) {
         u32i.UnregisterHotKey(null, HK_MW3)
         u32i.UnregisterHotKey(null, HK_MW4)
         u32i.UnregisterHotKey(null, HK_MW5)
+        u32i.UnregisterHotKey(null, HK_QUIT)
     }
 }
