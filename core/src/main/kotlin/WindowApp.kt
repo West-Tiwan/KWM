@@ -104,6 +104,7 @@ class WindowApp {
         AppState.systemStats.start()
         AppState.windowManager = winMan
         winMan.syncWindows()
+        winMan.startFocusFollowsMouse()
 
         hkMg.bind()
         val msg = MSG()

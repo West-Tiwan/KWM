@@ -1,12 +1,24 @@
 package org.example.win
 
+import com.sun.jna.Native
+import com.sun.jna.platform.win32.Kernel32
 import com.sun.jna.platform.win32.User32
 import com.sun.jna.platform.win32.WinDef
+import com.sun.jna.win32.W32APIOptions
 import org.example.layout.*
+import kotlin.concurrent.thread
+
+interface MyUser32 : User32 {
+    companion object {
+        val INSTANCE: MyUser32 = Native.load("user32", MyUser32::class.java, W32APIOptions.DEFAULT_OPTIONS)
+    }
+
+    fun WindowFromPoint(point: WinDef.POINT.ByValue): WinDef.HWND?
+}
 
 class WindowManager {
     val enum = EnumWindows()
-    val u32i = User32.INSTANCE
+    val u32i = MyUser32.INSTANCE
     val workspaceManager = AppState.workspaceManager
     val cont = WindowController(u32i)
 
@@ -27,6 +39,55 @@ class WindowManager {
         }
 
         retile()
+    }
+
+    fun windowUnderCursor(): WinDef.HWND? {
+        val point = WinDef.POINT()
+        u32i.GetCursorPos(point)
+        val byVal = WinDef.POINT.ByValue()
+        byVal.x = point.x
+        byVal.y = point.y
+        return u32i.WindowFromPoint(byVal)
+    }
+
+    fun topLevel(hwnd: WinDef.HWND?): WinDef.HWND? {
+        if (hwnd == null) return null
+        return u32i.GetAncestor(hwnd, User32.GA_ROOT)
+    }
+
+    fun focusWindow(hwnd: WinDef.HWND?) {
+        if (hwnd == null) return
+
+        val currentThreadId = WinDef.DWORD(Kernel32.INSTANCE.GetCurrentThreadId().toLong())
+        val targetThreadId = WinDef.DWORD(Kernel32.INSTANCE.GetCurrentThreadId().toLong())
+
+        u32i.AttachThreadInput(currentThreadId, targetThreadId, true)
+
+        u32i.ShowWindow(hwnd, User32.SW_RESTORE)
+        u32i.SetForegroundWindow(hwnd)
+        u32i.SetFocus(hwnd)
+
+        u32i.AttachThreadInput(currentThreadId, targetThreadId, false)
+    }
+
+    fun startFocusFollowsMouse() {
+        thread(name = "ffm-thread", isDaemon = true) {
+            var lastFocused: WinDef.HWND? = null
+
+            while (true) {
+                val raw = windowUnderCursor()
+                val top = topLevel(raw)
+
+                if (top != null &&
+                    top != lastFocused &&
+                    top in workspaceManager.currentWindows()
+                ) {
+                    focusWindow(top)
+                    lastFocused = top
+                }
+                Thread.sleep(100)
+            }
+        }
     }
 
     fun removeWindow(hwnd: WinDef.HWND) {
