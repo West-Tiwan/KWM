@@ -42,6 +42,8 @@ class WindowManager {
     }
 
     fun moveWinToWs(index: Int, hwnd: WinDef.HWND) {
+        val list = workspaceManager.currentWindows()
+        if (hwnd !in list) return
         workspaceManager.removeWindow(hwnd)
         switchWorkspace(index)
         workspaceManager.addWindow(hwnd)

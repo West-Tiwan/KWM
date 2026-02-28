@@ -175,6 +175,7 @@ class BarApp {
                     resizable = false,
                     transparent = true,
                     alwaysOnTop = true,
+                    title = "KWM",
                     state = rememberWindowState(
                         width = Toolkit.getDefaultToolkit().screenSize.width.dp,
                         height = 28.dp,
