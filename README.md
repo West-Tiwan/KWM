@@ -332,4 +332,4 @@ MIT License
 
 Computer Science Student
 
-IIIT Sonepat 2024-26
+IIIT Sonepat 2022-26
