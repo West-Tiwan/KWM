@@ -1,9 +1,10 @@
-package org.example.win
+package org.example.platform.windows
 
 import com.sun.jna.platform.win32.User32
 import com.sun.jna.platform.win32.WinDef
 import com.sun.jna.platform.win32.WinUser
 import org.example.layout.Rect
+import org.example.win.MonitorBounds
 
 class WindowController (val u32i: User32) {
 

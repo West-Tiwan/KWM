@@ -1,33 +1,20 @@
 package org.example.win
 
-import com.sun.jna.Native
-import com.sun.jna.platform.win32.Kernel32
-import com.sun.jna.platform.win32.User32
-import com.sun.jna.platform.win32.WinDef
-import com.sun.jna.win32.W32APIOptions
 import org.example.layout.*
+import org.example.platform.Platform
+import org.example.platform.WindowRef
 import kotlin.concurrent.thread
 
-interface MyUser32 : User32 {
-    companion object {
-        val INSTANCE: MyUser32 = Native.load("user32", MyUser32::class.java, W32APIOptions.DEFAULT_OPTIONS)
-    }
-
-    fun WindowFromPoint(point: WinDef.POINT.ByValue): WinDef.HWND?
-}
-
-class WindowManager {
-    val enum = EnumWindows()
-    val u32i = MyUser32.INSTANCE
+class WindowManager(private val platform: Platform) {
     val workspaceManager = AppState.workspaceManager
-    val cont = WindowController(u32i)
 
     fun syncWindows() {
-        val currentSystemWindows = enum.getWindows().map { it.windowHandle }
+        val currentSystemWindows = platform.windows()
         val workspaceWindows = workspaceManager.currentWindows()
 
         currentSystemWindows.forEach {
-            if (it !in workspaceWindows) {
+            // windows parked on another workspace can still be reported by the OS
+            if (!workspaceManager.isTracked(it)) {
                 workspaceManager.addWindow(it)
             }
         }
@@ -41,48 +28,18 @@ class WindowManager {
         retile()
     }
 
-    fun windowUnderCursor(): WinDef.HWND? {
-        val point = WinDef.POINT()
-        u32i.GetCursorPos(point)
-        val byVal = WinDef.POINT.ByValue()
-        byVal.x = point.x
-        byVal.y = point.y
-        return u32i.WindowFromPoint(byVal)
-    }
-
-    fun topLevel(hwnd: WinDef.HWND?): WinDef.HWND? {
-        if (hwnd == null) return null
-        return u32i.GetAncestor(hwnd, User32.GA_ROOT)
-    }
-
-    fun focusWindow(hwnd: WinDef.HWND?) {
-        if (hwnd == null) return
-
-        val currentThreadId = WinDef.DWORD(Kernel32.INSTANCE.GetCurrentThreadId().toLong())
-        val targetThreadId = WinDef.DWORD(Kernel32.INSTANCE.GetCurrentThreadId().toLong())
-
-        u32i.AttachThreadInput(currentThreadId, targetThreadId, true)
-
-        u32i.ShowWindow(hwnd, User32.SW_RESTORE)
-        u32i.SetForegroundWindow(hwnd)
-        u32i.SetFocus(hwnd)
-
-        u32i.AttachThreadInput(currentThreadId, targetThreadId, false)
-    }
-
     fun startFocusFollowsMouse() {
         thread(name = "ffm-thread", isDaemon = true) {
-            var lastFocused: WinDef.HWND? = null
+            var lastFocused: WindowRef? = null
 
             while (true) {
-                val raw = windowUnderCursor()
-                val top = topLevel(raw)
+                val top = platform.windowUnderCursor()
 
                 if (top != null &&
                     top != lastFocused &&
                     top in workspaceManager.currentWindows()
                 ) {
-                    focusWindow(top)
+                    platform.focus(top)
                     lastFocused = top
                 }
                 Thread.sleep(100)
@@ -90,38 +47,38 @@ class WindowManager {
         }
     }
 
-    fun removeWindow(hwnd: WinDef.HWND) {
-        workspaceManager.removeWindow(hwnd)
+    fun removeWindow(window: WindowRef) {
+        workspaceManager.removeWindow(window)
         retile()
     }
 
     fun switchWorkspace(index: Int) {
         val (old, new) = workspaceManager.switchTo(index)
-        old.forEach { u32i.ShowWindow(it, User32.SW_HIDE) }
-        new.forEach { u32i.ShowWindow(it, User32.SW_RESTORE) }
+        old.forEach { platform.hide(it) }
+        new.forEach { platform.show(it) }
         retile()
     }
 
-    fun moveWinToWs(index: Int, hwnd: WinDef.HWND) {
+    fun moveWinToWs(index: Int, window: WindowRef) {
         val list = workspaceManager.currentWindows()
-        if (hwnd !in list) return
-        workspaceManager.removeWindow(hwnd)
+        if (window !in list) return
+        workspaceManager.removeWindow(window)
         switchWorkspace(index)
-        workspaceManager.addWindow(hwnd)
+        workspaceManager.addWindow(window)
         retile()
     }
 
-    fun promoteWindow(hwnd: WinDef.HWND) {
+    fun promoteWindow(window: WindowRef) {
         val list = workspaceManager.currentWindows()
-        if (hwnd !in list) return
-        workspaceManager.removeWindow(hwnd)
-        workspaceManager.addWindow(hwnd, 0)
+        if (window !in list) return
+        workspaceManager.removeWindow(window)
+        workspaceManager.addWindow(window, 0)
         retile()
         println("Promoted")
     }
 
-    fun moveDownWindow(hwnd: WinDef.HWND) {
-        val curr = workspaceManager.currentWindows().indexOf(hwnd)
+    fun moveDownWindow(window: WindowRef) {
+        val curr = workspaceManager.currentWindows().indexOf(window)
         if (curr == -1) return
         if (curr != workspaceManager.currentWindows().size - 1) {
             val next = curr + 1
@@ -131,8 +88,8 @@ class WindowManager {
         }
     }
 
-    fun moveUpWindow(hwnd: WinDef.HWND) {
-        val curr = workspaceManager.currentWindows().indexOf(hwnd)
+    fun moveUpWindow(window: WindowRef) {
+        val curr = workspaceManager.currentWindows().indexOf(window)
         if (curr <= 0) return
         val prev = curr - 1
         workspaceManager.swapWindows(curr, prev)
@@ -144,52 +101,26 @@ class WindowManager {
         val list = workspaceManager.currentWindows().take(4)
         if (list.isEmpty()) return
         when (list.size) {
-            1 -> cont.apply(
-                list[0],
-                FullScreen.rect(cont.getMonitorBounds(list[0]))
-            )
+            1 -> place(list[0], FullScreen)
             2 -> {
-                cont.apply(
-                    list[0],
-                    LeftHalf.rect(cont.getMonitorBounds(list[0]))
-                )
-                cont.apply(
-                    list[1],
-                    RightHalf.rect(cont.getMonitorBounds(list[1]))
-                )
+                place(list[0], LeftHalf)
+                place(list[1], RightHalf)
             }
             3 -> {
-                cont.apply(
-                    list[0],
-                    LeftHalf.rect(cont.getMonitorBounds(list[0]))
-                )
-                cont.apply(
-                    list[1],
-                    TopHalf.rect(cont.getMonitorBounds(list[1]))
-                )
-                cont.apply(
-                    list[2],
-                    BottomHalf.rect(cont.getMonitorBounds(list[2]))
-                )
+                place(list[0], LeftHalf)
+                place(list[1], TopHalf)
+                place(list[2], BottomHalf)
             }
             else -> {
-                cont.apply(
-                    list[0],
-                    LeftHalf.rect(cont.getMonitorBounds(list[0]))
-                )
-                cont.apply(
-                    list[1],
-                    RightTopThird.rect(cont.getMonitorBounds(list[1]))
-                )
-                cont.apply(
-                    list[2],
-                    RightMiddleThird.rect(cont.getMonitorBounds(list[2]))
-                )
-                cont.apply(
-                    list[3],
-                    RightBottomThird.rect(cont.getMonitorBounds(list[3]))
-                )
+                place(list[0], LeftHalf)
+                place(list[1], RightTopThird)
+                place(list[2], RightMiddleThird)
+                place(list[3], RightBottomThird)
             }
         }
+    }
+
+    private fun place(window: WindowRef, layout: Layout) {
+        platform.setFrame(window, layout.rect(platform.monitorBounds(window)))
     }
 }

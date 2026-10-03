@@ -1,39 +1,43 @@
 package org.example.win
 
-import com.sun.jna.platform.win32.WinDef
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import org.example.platform.WindowRef
 import java.util.Collections.swap
 
 class WorkspaceManager (
     private val workspaceCount: Int
 ) {
-    private val workspaces = List(workspaceCount) {mutableListOf<WinDef.HWND>()}
+    private val workspaces = List(workspaceCount) {mutableListOf<WindowRef>()}
     var current = 0
         private set
     private val _currentFlow = MutableStateFlow(current)
     val currentFlow: StateFlow<Int> = _currentFlow
 
-    fun currentWindows(): MutableList<WinDef.HWND> {
+    fun currentWindows(): MutableList<WindowRef> {
         return workspaces[current]
     }
 
-    fun addWindow(hwnd: WinDef.HWND, index: Int = workspaces[current].size) {
-        if (hwnd !in workspaces[current]) {
-            workspaces[current].add(index, hwnd)
+    fun isTracked(window: WindowRef): Boolean {
+        return workspaces.any { window in it }
+    }
+
+    fun addWindow(window: WindowRef, index: Int = workspaces[current].size) {
+        if (window !in workspaces[current]) {
+            workspaces[current].add(index, window)
         }
     }
 
-    fun removeWindow(hwnd: WinDef.HWND) {
-        workspaces.forEach { it.remove(hwnd) }
+    fun removeWindow(window: WindowRef) {
+        workspaces.forEach { it.remove(window) }
     }
 
     fun swapWindows(curr: Int, next: Int) {
         swap(workspaces[current], curr, next)
     }
 
-    fun switchTo(to: Int): Pair<List<WinDef.HWND>, List<WinDef.HWND>> {
-        if (to !in workspaces.indices) return emptyList<WinDef.HWND>() to emptyList()
+    fun switchTo(to: Int): Pair<List<WindowRef>, List<WindowRef>> {
+        if (to !in workspaces.indices) return emptyList<WindowRef>() to emptyList()
         val oldWindows = workspaces[current].toList()
         current = to
         _currentFlow.value = current
