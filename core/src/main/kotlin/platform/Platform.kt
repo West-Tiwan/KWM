@@ -2,6 +2,7 @@ package org.example.platform
 
 import org.example.hotkey.HotkeyAction
 import org.example.layout.Rect
+import org.example.platform.macos.MacPlatform
 import org.example.platform.windows.WindowsPlatform
 import org.example.win.MonitorBounds
 
@@ -32,7 +33,7 @@ interface Platform {
     companion object {
         fun create(): Platform = when (OperatingSystem.current) {
             OperatingSystem.WINDOWS -> WindowsPlatform()
-            OperatingSystem.MACOS -> throw UnsupportedOperationException("macOS is not supported yet")
+            OperatingSystem.MACOS -> MacPlatform()
         }
     }
 }
