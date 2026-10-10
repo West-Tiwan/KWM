@@ -14,6 +14,7 @@ class MacPlatform : Platform {
     private val POLL_INTERVAL_MS = 250L
 
     private val cf = CoreFoundation.INSTANCE
+    private val cg = CoreGraphics.INSTANCE
     private val dispatcher = Executors.newSingleThreadExecutor { Thread(it, "kwm-events").apply { isDaemon = true } }
 
     @Volatile
@@ -92,8 +93,33 @@ class MacPlatform : Platform {
         }
     }
 
-    // TODO: focus follows mouse
-    override fun windowUnderCursor(): WindowRef? = null
+    override fun windowUnderCursor(): WindowRef? {
+        val (x, y) = cursorPosition() ?: return null
+        val element = AX.copyElementAt(x, y) ?: return null
+        try {
+            val pid = AX.pid(element) ?: return null
+            if (AX.string(element, AX.ROLE) == "AXWindow") return MacWindow(element, pid)
+            // Usually a button or text view inside the window
+            val window = AX.copy(element, AX.WINDOW) ?: return null
+            try {
+                return MacWindow(window, pid)
+            } finally {
+                CF.release(window)
+            }
+        } finally {
+            CF.release(element)
+        }
+    }
+
+    private fun cursorPosition(): Pair<Double, Double>? {
+        val event = cg.CGEventCreate(null) ?: return null
+        try {
+            val location = cg.CGEventGetLocation(event)
+            return location.x to location.y
+        } finally {
+            CF.release(event)
+        }
+    }
 
     /**
      * Runs a CFRunLoop for the hotkey tap on this thread and polls for window changes on another.
