@@ -1,17 +1,26 @@
 package org.example.platform.macos
 
+import com.sun.jna.Pointer
 import org.example.layout.Rect
 import org.example.platform.Platform
 import org.example.platform.PlatformEvents
 import org.example.platform.WindowRef
 import org.example.win.MonitorBounds
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import kotlin.concurrent.thread
 
 class MacPlatform : Platform {
     private val POLL_INTERVAL_MS = 250L
 
+    private val cf = CoreFoundation.INSTANCE
+    private val dispatcher = Executors.newSingleThreadExecutor { Thread(it, "kwm-events").apply { isDaemon = true } }
+
     @Volatile
     private var running = false
+
+    @Volatile
+    private var runLoop: Pointer? = null
 
     // Where each hidden window was before it got parked
     private val parked = ConcurrentHashMap<MacWindow, Pair<Double, Double>>()
@@ -86,22 +95,41 @@ class MacPlatform : Platform {
     // TODO: focus follows mouse
     override fun windowUnderCursor(): WindowRef? = null
 
-    /** macOS has no cheap equivalent of SetWinEventHook for every app, so poll for window changes. */
+    /**
+     * Runs a CFRunLoop for the hotkey tap on this thread and polls for window changes on another.
+     * Both hand their work to one dispatcher thread so the window manager never runs concurrently
+     * and the tap callback returns immediately.
+     */
     override fun run(events: PlatformEvents) {
         running = true
+        val hotkeys = MacHotkeys { action -> dispatcher.execute { events.hotkey(action) } }
+        hotkeys.install()
+        thread(name = "kwm-window-poll", isDaemon = true) { pollWindows(events) }
+
+        runLoop = cf.CFRunLoopGetCurrent()
+        cf.CFRunLoopRun()
+
+        running = false
+        hotkeys.uninstall()
+        dispatcher.shutdown()
+    }
+
+    override fun stop() {
+        running = false
+        runLoop?.let(cf::CFRunLoopStop)
+    }
+
+    /** macOS has no cheap equivalent of SetWinEventHook for every app, so poll for window changes. */
+    private fun pollWindows(events: PlatformEvents) {
         var known = windows().toSet()
         while (running) {
             Thread.sleep(POLL_INTERVAL_MS)
             val current = windows().toSet()
             if (current != known) {
                 known = current
-                events.windowsChanged()
+                dispatcher.execute { events.windowsChanged() }
             }
         }
-    }
-
-    override fun stop() {
-        running = false
     }
 
     private val WindowRef.element get() = (this as MacWindow).element
