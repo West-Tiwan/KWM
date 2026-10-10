@@ -5,12 +5,16 @@ import org.example.platform.Platform
 import org.example.platform.PlatformEvents
 import org.example.platform.WindowRef
 import org.example.win.MonitorBounds
+import java.util.concurrent.ConcurrentHashMap
 
 class MacPlatform : Platform {
     private val POLL_INTERVAL_MS = 250L
 
     @Volatile
     private var running = false
+
+    // Where each hidden window was before it got parked
+    private val parked = ConcurrentHashMap<MacWindow, Pair<Double, Double>>()
 
     init {
         MacPermissions.awaitAccessibility()
@@ -35,10 +39,22 @@ class MacPlatform : Platform {
         AX.setSize(element, rect.w.toDouble(), rect.h.toDouble())
     }
 
-    // TODO: workspaces
-    override fun hide(window: WindowRef) {}
+    /**
+     * macOS can't hide a single window, and minimizing animates through the Dock, so park it
+     * in the screen corner instead. The OS keeps a sliver visible, which is fine for a corner.
+     */
+    override fun hide(window: WindowRef) {
+        val element = window.element
+        val position = AX.position(element) ?: return
+        parked[window as MacWindow] = position
+        val screen = monitorBounds(window)
+        AX.setPosition(element, (screen.x + screen.width - 1).toDouble(), (screen.y + screen.height - 1).toDouble())
+    }
 
-    override fun show(window: WindowRef) {}
+    override fun show(window: WindowRef) {
+        val (x, y) = parked.remove(window) ?: return
+        AX.setPosition(window.element, x, y)
+    }
 
     override fun focus(window: WindowRef) {
         window as MacWindow
