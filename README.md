@@ -1,10 +1,12 @@
-# KWM — Kotlin Window Manager for Windows
+# KWM — Kotlin Window Manager
 
-A lightweight **tiling window manager for Windows** written in **Kotlin** using **JNA** and **Compose Desktop**.
+A lightweight **tiling window manager for Windows and macOS** written in **Kotlin** using **JNA** and **Compose Desktop**.
 
 KWM automatically arranges application windows into a tiling layout and provides workspace management, keyboard-driven window control, and a real-time status bar.
 
-The goal of this project is to bring a **Linux-style tiling workflow** (similar to i3, XMonad, or GlazeWM) to Windows while keeping the implementation simple and hackable.
+The goal of this project is to bring a **Linux-style tiling workflow** (similar to i3, XMonad, or GlazeWM) to Windows and macOS while keeping the implementation simple and hackable. It works fully offline.
+
+KWM detects the operating system at startup and loads the matching platform backend, so the same build runs on both.
 
 ---
 
@@ -58,6 +60,16 @@ Operations supported:
 * Move window to another workspace
 * Switch workspaces
 
+Hotkeys use **Alt** on Windows and **Option** on macOS:
+
+| Hotkey | Action |
+| --- | --- |
+| `Alt + ←` | Promote focused window to master |
+| `Alt + ↑` / `Alt + ↓` | Move focused window up / down the stack |
+| `Alt + 1…5` | Switch to workspace 1–5 |
+| `Alt + Shift + 1…5` | Move focused window to workspace 1–5 |
+| `Alt + Shift + Q` | Quit KWM |
+
 ---
 
 ## Focus Follows Mouse
@@ -104,10 +116,13 @@ KWM
 │
 ├─ core
 │   Window management engine
-│   - window discovery
 │   - tiling logic
 │   - workspace system
-│   - hotkey handling
+│   - hotkey bindings
+│   └─ platform
+│       Platform interface + OS detection
+│       ├─ windows   Win32: window discovery, events, hotkeys
+│       └─ macos     Accessibility API, CoreGraphics event tap
 │
 ├─ bar
 │   Compose Desktop UI
@@ -128,7 +143,7 @@ bar   → UI only
 launcher → connects both
 ```
 
-The window manager engine does **not depend on the UI**.
+The window manager engine does **not depend on the UI**, and the tiling and workspace logic does **not depend on the OS**. Everything OS-specific sits behind the `Platform` interface.
 
 ---
 
@@ -140,13 +155,15 @@ Language:
 
 Libraries:
 
-* **JNA (Java Native Access)** — Win32 API integration
+* **JNA (Java Native Access)** — Win32, Accessibility, CoreGraphics and CoreFoundation APIs
 * **Compose Desktop** — status bar UI
 * **OSHI** — system statistics (CPU, RAM, battery)
 
 ---
 
 # How It Works
+
+## Windows
 
 KWM listens to Windows events using:
 
@@ -160,11 +177,24 @@ Events captured include:
 * window destruction
 * foreground changes
 
+Hotkeys are registered with `RegisterHotKey`, and windows are moved with `SetWindowPos`.
+
+## macOS
+
+* **Window discovery:** `CGWindowListCopyWindowInfo` finds apps with windows on screen, and the Accessibility API lists their standard windows (skipping sheets, panels, minimized and full screen windows)
+* **Tiling:** windows are moved and resized by setting their `AXPosition` and `AXSize` attributes
+* **Window changes:** polled every 250 ms, since macOS has no system-wide equivalent of `SetWinEventHook`
+* **Hotkeys:** a `CGEventTap` swallows matching key presses, so `Option + 1` doesn't also type `¡`
+* **Workspaces:** macOS can't hide a single window, so windows on other workspaces are parked in the bottom-right corner of the screen
+* **Status bar:** sits below the menu bar, and KWM runs without a Dock icon
+
+## Both
+
 When events occur, KWM:
 
 1. updates workspace window lists
 2. recalculates the tiling layout
-3. applies new window positions using Win32 APIs
+3. applies new window positions through the platform backend
 
 ---
 
@@ -174,7 +204,7 @@ When events occur, KWM:
 
 * JDK 17+
 * Gradle
-* Windows
+* Windows 10/11 or macOS
 
 ## Clone the repository
 
@@ -187,6 +217,16 @@ cd kwm
 
 ```
 ./gradlew :launcher:run
+```
+
+### macOS permissions
+
+KWM needs **Accessibility** access to move other apps' windows and listen for hotkeys. On first launch macOS shows a prompt; allow it under **System Settings → Privacy & Security → Accessibility** for the app you launched KWM from (Terminal, iTerm or your IDE). KWM waits until access is granted.
+
+## Run the tests
+
+```
+./gradlew :core:test
 ```
 
 ---
@@ -217,15 +257,12 @@ Handles:
 
 ---
 
-## WindowController
+## Platform
 
-Applies tiling layouts by calling Win32 APIs such as:
+Interface between the window manager and the OS. `Platform.create()` picks the backend for the detected OS.
 
-```
-SetWindowPos
-MoveWindow
-ShowWindow
-```
+* **WindowsPlatform** — `SetWinEventHook`, `RegisterHotKey`, `SetWindowPos`, `ShowWindow`
+* **MacPlatform** — Accessibility API, `CGEventTap`, `CGWindowListCopyWindowInfo`
 
 ---
 
@@ -260,7 +297,8 @@ Displays:
 * Fixed tiling layout
 * No configuration file yet
 * No animated transitions
-* Windows only
+* macOS: only windows on the current Space are managed
+* macOS: window changes are polled rather than event-driven
 
 ---
 
