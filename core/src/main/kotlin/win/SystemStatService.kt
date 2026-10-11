@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import oshi.SystemInfo
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.math.roundToInt
 
 class SystemStatService {
     private val si = SystemInfo()
@@ -29,9 +30,10 @@ class SystemStatService {
                 val memory = hardware.memory
                 val used = memory.total - memory.available
                 val ramPercent = ((used.toDouble() / memory.total) * 100).toInt()
-                val maxBattery = hardware.powerSources.firstOrNull()?.maxCapacity ?: 1
-                val currBattery = hardware.powerSources.firstOrNull()?.currentCapacity ?: 1
-                val battery = ((maxBattery - currBattery) * 100/maxBattery)
+                // -1 hides the battery in the bar on machines without one
+                val battery = hardware.powerSources.firstOrNull()
+                    ?.let { (it.remainingCapacityPercent * 100).roundToInt() }
+                    ?: -1
                 val now = LocalDateTime.now()
                 _stats.value = SystemStats(
                     cpu = cpuPercent,
