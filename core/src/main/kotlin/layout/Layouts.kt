@@ -24,5 +24,5 @@ object RightMiddleThird: Layout {
     override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.x + monitorBounds.width/2, monitorBounds.y + monitorBounds.height/3 + 26, monitorBounds.width/2, monitorBounds.height/3 - 12)
 }
 object RightBottomThird: Layout {
-    override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.x + monitorBounds.width/2, monitorBounds.y + 2*monitorBounds.height/3 + 12, monitorBounds.width/2, monitorBounds.height/3 - 12)
+    override fun rect(monitorBounds: MonitorBounds) = Rect(monitorBounds.x + monitorBounds.width/2, monitorBounds.y + 2*monitorBounds.height/3 + 14, monitorBounds.width/2, monitorBounds.height/3 - 14)
 }
