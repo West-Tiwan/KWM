@@ -53,6 +53,7 @@ object CF {
 
     private const val UTF8 = 0x08000100
     private const val NUMBER_SINT64 = 4
+    private const val NUMBER_DOUBLE = 13
 
     val TRUE: Pointer = globals.getGlobalVariableAddress("kCFBooleanTrue").getPointer(0)
     val RUN_LOOP_COMMON_MODES: Pointer = globals.getGlobalVariableAddress("kCFRunLoopCommonModes").getPointer(0)
@@ -73,6 +74,12 @@ object CF {
         val out = Memory(8)
         lib.CFNumberGetValue(number, NUMBER_SINT64, out)
         return out.getLong(0)
+    }
+
+    fun toDouble(number: Pointer): Double {
+        val out = Memory(8)
+        lib.CFNumberGetValue(number, NUMBER_DOUBLE, out)
+        return out.getDouble(0)
     }
 
     fun toBoolean(bool: Pointer): Boolean = lib.CFBooleanGetValue(bool).toInt() != 0

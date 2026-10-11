@@ -105,9 +105,10 @@ object AX {
         return if (lib.AXUIElementGetPid(element, out) == SUCCESS) out.value else null
     }
 
-    fun copyElementAt(x: Double, y: Double): Pointer? {
+    /** Hit-tests inside one app. Never pass KWM's own app: see [MacWindows.appAt]. */
+    fun copyElementAt(app: Pointer, x: Double, y: Double): Pointer? {
         val out = PointerByReference()
-        if (lib.AXUIElementCopyElementAtPosition(systemWide, x.toFloat(), y.toFloat(), out) != SUCCESS) return null
+        if (lib.AXUIElementCopyElementAtPosition(app, x.toFloat(), y.toFloat(), out) != SUCCESS) return null
         return out.value
     }
 

@@ -82,6 +82,8 @@ class MacPlatform : Platform {
         val app = AX.copy(AX.systemWide, AX.FOCUSED_APPLICATION) ?: return null
         try {
             val pid = AX.pid(app) ?: return null
+            // The bar is focused after a click; querying our own AX tree off the AppKit thread crashes AWT
+            if (pid == MacWindows.ownPid) return null
             val window = AX.copy(app, AX.FOCUSED_WINDOW) ?: return null
             try {
                 return MacWindow(window, pid)
@@ -95,9 +97,15 @@ class MacPlatform : Platform {
 
     override fun windowUnderCursor(): WindowRef? {
         val (x, y) = cursorPosition() ?: return null
-        val element = AX.copyElementAt(x, y) ?: return null
+        // Ask only the app that owns the window under the cursor, and never KWM itself
+        val pid = MacWindows.appAt(x, y) ?: return null
+        val app = AX.copyApplication(pid)
+        val element = try {
+            AX.copyElementAt(app, x, y)
+        } finally {
+            CF.release(app)
+        } ?: return null
         try {
-            val pid = AX.pid(element) ?: return null
             if (AX.string(element, AX.ROLE) == "AXWindow") return MacWindow(element, pid)
             // Usually a button or text view inside the window
             val window = AX.copy(element, AX.WINDOW) ?: return null
