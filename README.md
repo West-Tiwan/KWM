@@ -203,7 +203,7 @@ When events occur, KWM:
 ## Requirements
 
 * JDK 17+
-* Gradle
+* Gradle (the wrapper runs its daemon on JDK 21 and downloads one if needed, so newer default JDKs work)
 * Windows 10/11 or macOS
 
 ## Clone the repository
