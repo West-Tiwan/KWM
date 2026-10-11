@@ -79,17 +79,29 @@ class MacPlatform : Platform {
     }
 
     override fun focusedWindow(): WindowRef? {
-        val app = AX.copy(AX.systemWide, AX.FOCUSED_APPLICATION) ?: return null
+        val pid = activeAppPid() ?: return null
+        val app = AX.copyApplication(pid)
         try {
-            val pid = AX.pid(app) ?: return null
-            // The bar is focused after a click; querying our own AX tree off the AppKit thread crashes AWT
-            if (pid == MacWindows.ownPid) return null
             val window = AX.copy(app, AX.FOCUSED_WINDOW) ?: return null
             try {
                 return MacWindow(window, pid)
             } finally {
                 CF.release(window)
             }
+        } finally {
+            CF.release(app)
+        }
+    }
+
+    /**
+     * The system-wide AXFocusedApplication query returns nothing while an Electron or Chromium app is
+     * active, so ask each app whether it's frontmost instead. Apps come front to back, so the active one
+     * is almost always the first. KWM itself is never a candidate (see [MacWindows.appAt]).
+     */
+    private fun activeAppPid(): Int? = MacWindows.appPids().firstOrNull { pid ->
+        val app = AX.copyApplication(pid)
+        try {
+            AX.bool(app, AX.FRONTMOST) == true
         } finally {
             CF.release(app)
         }

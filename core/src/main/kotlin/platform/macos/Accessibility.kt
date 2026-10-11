@@ -46,7 +46,6 @@ object AX {
     val SIZE = CF.string("AXSize")
     val MAIN = CF.string("AXMain")
     val FRONTMOST = CF.string("AXFrontmost")
-    val FOCUSED_APPLICATION = CF.string("AXFocusedApplication")
     val FOCUSED_WINDOW = CF.string("AXFocusedWindow")
     val RAISE = CF.string("AXRaise")
 
