@@ -198,6 +198,24 @@ When events occur, KWM:
 
 ---
 
+# Install
+
+Download the latest build from [Releases](https://github.com/West-Tiwan/KWM/releases).
+
+## macOS (Apple Silicon)
+
+1. Open `KWM-<version>.dmg` and drag **KWM** into Applications
+2. The app isn't notarized, so the first time right-click it and choose **Open**, or allow it under **System Settings → Privacy & Security**
+3. Grant **Accessibility** access to KWM when prompted
+
+## Windows (x64)
+
+1. Install Java 17 or newer, e.g. from [Adoptium](https://adoptium.net)
+2. Unzip `KWM-<version>-windows-x64.zip`
+3. Run `KWM.bat`
+
+---
+
 # Building
 
 ## Requirements
@@ -209,8 +227,8 @@ When events occur, KWM:
 ## Clone the repository
 
 ```
-git clone https://github.com/<your-username>/kwm
-cd kwm
+git clone https://github.com/West-Tiwan/KWM
+cd KWM
 ```
 
 ## Run the project
@@ -227,6 +245,13 @@ KWM needs **Accessibility** access to move other apps' windows and listen for ho
 
 ```
 ./gradlew :core:test
+```
+
+## Package a release
+
+```
+./gradlew :launcher:packageDmg     # macOS .dmg (build on a Mac)
+./gradlew :launcher:windowsZip     # Windows zip (builds on any OS)
 ```
 
 ---

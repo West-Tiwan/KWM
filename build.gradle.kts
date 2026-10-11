@@ -5,7 +5,7 @@ plugins {
 
 allprojects {
     group = "com.west-tiwan.kwm"
-    version = "0.1.0"
+    version = "1.0.0"
 
     repositories {
         google()
