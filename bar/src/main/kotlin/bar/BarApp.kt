@@ -33,6 +33,7 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import org.example.win.AppState
+import java.awt.GraphicsEnvironment
 import java.awt.Toolkit
 import kotlin.concurrent.thread
 
@@ -181,7 +182,7 @@ class BarApp {
                         height = 28.dp,
                         position = WindowPosition.Absolute(
                             x = 0.dp,
-                            y = 0.dp
+                            y = topInset().dp
                         )
                     )
                 ) {
@@ -194,5 +195,11 @@ class BarApp {
     }
     fun shutdown() {
         exit?.invoke()
+    }
+
+    // Keeps the bar below the macOS menu bar; 0 on Windows unless the taskbar is on top
+    private fun topInset(): Int {
+        val config = GraphicsEnvironment.getLocalGraphicsEnvironment().defaultScreenDevice.defaultConfiguration
+        return Toolkit.getDefaultToolkit().getScreenInsets(config).top
     }
 }
