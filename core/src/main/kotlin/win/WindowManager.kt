@@ -3,10 +3,12 @@ package org.example.win
 import org.example.layout.*
 import org.example.platform.Platform
 import org.example.platform.WindowRef
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
 class WindowManager(private val platform: Platform) {
     val workspaceManager = AppState.workspaceManager
+    private val restored = AtomicBoolean(false)
 
     fun syncWindows() {
         val currentSystemWindows = platform.windows()
@@ -45,6 +47,12 @@ class WindowManager(private val platform: Platform) {
                 Thread.sleep(100)
             }
         }
+    }
+
+    /** Brings back windows hidden on other workspaces so none stay hidden after KWM exits. Runs once. */
+    fun restoreAllWindows() {
+        if (!restored.compareAndSet(false, true)) return
+        workspaceManager.allWindows().forEach { platform.show(it) }
     }
 
     fun removeWindow(window: WindowRef) {

@@ -33,6 +33,7 @@ class WindowApp {
     fun shutdown() {
         println("Shutting down WM")
 
+        winMan.restoreAllWindows()
         platform.stop()
 
         onShutdown?.invoke()
@@ -42,6 +43,10 @@ class WindowApp {
     fun start() {
         AppState.systemStats.start()
         AppState.windowManager = winMan
+        // Also covers Ctrl+C and kill, which skip shutdown()
+        Runtime.getRuntime().addShutdownHook(thread(start = false, name = "kwm-restore") {
+            winMan.restoreAllWindows()
+        })
         winMan.syncWindows()
         winMan.startFocusFollowsMouse()
 

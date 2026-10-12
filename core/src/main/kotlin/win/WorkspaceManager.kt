@@ -18,6 +18,10 @@ class WorkspaceManager (
         return workspaces[current]
     }
 
+    fun allWindows(): List<WindowRef> {
+        return workspaces.flatten()
+    }
+
     fun isTracked(window: WindowRef): Boolean {
         return workspaces.any { window in it }
     }
